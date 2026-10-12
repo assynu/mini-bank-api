@@ -1,5 +1,5 @@
 plugins {
-    java
+    groovy
     application
 }
 
@@ -17,8 +17,10 @@ repositories {
 }
 
 dependencies {
+    testImplementation(platform("org.spockframework:spock-bom:2.4-groovy-4.0"))
+    testImplementation("org.spockframework:spock-core")
+
     testImplementation(platform("org.junit:junit-bom:5.11.4"))
-    testImplementation("org.junit.jupiter:junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
@@ -28,4 +30,7 @@ application {
 
 tasks.test {
     useJUnitPlatform()
+    testLogging {
+        events("passed", "skipped", "failed")
+    }
 }
