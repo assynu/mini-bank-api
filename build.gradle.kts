@@ -7,8 +7,8 @@ buildscript {
     }
     dependencies {
         classpath("org.testcontainers:testcontainers-postgresql:2.0.5")
-        classpath("org.flywaydb:flyway-core:12.8.0")
-        classpath("org.flywaydb:flyway-database-postgresql:12.8.0")
+        classpath("org.flywaydb:flyway-core:13.10.0")
+        classpath("org.flywaydb:flyway-database-postgresql:13.10.0")
         classpath("org.postgresql:postgresql:42.7.14")
     }
 }
@@ -36,16 +36,16 @@ dependencies {
     testImplementation(platform("org.spockframework:spock-bom:2.4-groovy-4.0"))
     testImplementation("org.spockframework:spock-core")
 
-    testImplementation(platform("org.junit:junit-bom:5.11.4"))
+    testImplementation(platform("org.junit:junit-bom:6.1.3"))
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
-    implementation("org.flywaydb:flyway-core:12.8.0")
-    implementation("org.flywaydb:flyway-database-postgresql:12.8.0")
-    implementation("org.slf4j:slf4j-api:2.0.17")
+    implementation("org.flywaydb:flyway-core:13.10.0")
+    implementation("org.flywaydb:flyway-database-postgresql:13.10.0")
+    implementation("org.slf4j:slf4j-api:2.0.20")
     implementation("org.jooq:jooq:3.21.9")
 
     runtimeOnly("org.postgresql:postgresql:42.7.14")
-    runtimeOnly("ch.qos.logback:logback-classic:1.6.3")
+    runtimeOnly("ch.qos.logback:logback-classic:1.6.5")
 }
 
 application {
