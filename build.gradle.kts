@@ -1,6 +1,22 @@
+import org.flywaydb.core.Flyway
+import org.testcontainers.postgresql.PostgreSQLContainer
+
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath("org.testcontainers:testcontainers-postgresql:2.0.5")
+        classpath("org.flywaydb:flyway-core:12.8.0")
+        classpath("org.flywaydb:flyway-database-postgresql:12.8.0")
+        classpath("org.postgresql:postgresql:42.7.14")
+    }
+}
+
 plugins {
     groovy
     application
+    id("org.jooq.jooq-codegen-gradle") version "3.21.9"
 }
 
 group = "com.bartczakdawid"
@@ -26,9 +42,10 @@ dependencies {
     implementation("org.flywaydb:flyway-core:12.8.0")
     implementation("org.flywaydb:flyway-database-postgresql:12.8.0")
     implementation("org.slf4j:slf4j-api:2.0.17")
+    implementation("org.jooq:jooq:3.21.9")
 
     runtimeOnly("org.postgresql:postgresql:42.7.14")
-    runtimeOnly("ch.qos.logback:logback-classic:1.5.18")
+    runtimeOnly("ch.qos.logback:logback-classic:1.6.3")
 }
 
 application {
@@ -40,4 +57,58 @@ tasks.test {
     testLogging {
         events("passed", "skipped", "failed")
     }
+}
+
+jooq {
+    configuration {
+        generator {
+            database {
+                name = "org.jooq.meta.postgres.PostgresDatabase"
+                inputSchema = "public"
+                excludes = "flyway_schema_history"
+            }
+            target {
+                packageName = "com.bartczakdawid.minibank.jooq"
+            }
+        }
+    }
+}
+
+val migrations = layout.projectDirectory.dir("src/main/resources/db/migration")
+
+tasks.named("jooqCodegen") {
+    inputs.dir(migrations)
+
+    var postgres: PostgreSQLContainer? = null
+
+    doFirst {
+        val container = PostgreSQLContainer("postgres:18")
+        container.start()
+        postgres = container
+
+        Flyway.configure()
+            .dataSource(container.jdbcUrl, container.username, container.password)
+            .locations("filesystem:${migrations.asFile.absolutePath}")
+            .load()
+            .migrate()
+
+        jooq {
+            configuration {
+                jdbc {
+                    driver = "org.postgresql.Driver"
+                    url = container.jdbcUrl
+                    user = container.username
+                    password = container.password
+                }
+            }
+        }
+    }
+
+    doLast {
+        postgres?.stop()
+    }
+}
+
+tasks.compileJava {
+    dependsOn("jooqCodegen")
 }
