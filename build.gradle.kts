@@ -22,6 +22,11 @@ dependencies {
 
     testImplementation(platform("org.junit:junit-bom:5.11.4"))
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+
+    implementation("org.flywaydb:flyway-core:12.8.0")
+    implementation("org.flywaydb:flyway-database-postgresql:12.8.0")
+
+    runtimeOnly("org.postgresql:postgresql:42.7.14")
 }
 
 application {
