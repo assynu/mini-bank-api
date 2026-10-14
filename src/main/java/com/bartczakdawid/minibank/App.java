@@ -1,12 +1,16 @@
 package com.bartczakdawid.minibank;
 
 import org.flywaydb.core.Flyway;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class App {
+    private static final Logger log = LoggerFactory.getLogger(App.class);
+
     public static void main(String[] args) {
         databaseMigration();
 
-        System.out.println("Mini Bank API started");
+        log.info("Mini Bank API started");
     }
 
     private static void databaseMigration() {
@@ -14,11 +18,17 @@ public class App {
         String username = System.getenv().getOrDefault("DATABASE_USERNAME", "minibank");
         String password = System.getenv().getOrDefault("DATABASE_PASSWORD", "minibank");
 
-        Flyway.configure()
+        var migrationResult = Flyway.configure()
                 .dataSource(url, username, password)
                 .load()
                 .migrate();
 
-        System.out.println("Database migrated successfully");
-    }
+        String version = migrationResult.targetSchemaVersion != null
+                ? migrationResult.targetSchemaVersion
+                : migrationResult.initialSchemaVersion;
+
+        log.atInfo()
+                .addKeyValue("applied", migrationResult.migrationsExecuted)
+                .addKeyValue("version", version)
+                .log("Database migrated");    }
 }

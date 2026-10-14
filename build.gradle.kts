@@ -25,8 +25,10 @@ dependencies {
 
     implementation("org.flywaydb:flyway-core:12.8.0")
     implementation("org.flywaydb:flyway-database-postgresql:12.8.0")
+    implementation("org.slf4j:slf4j-api:2.0.17")
 
     runtimeOnly("org.postgresql:postgresql:42.7.14")
+    runtimeOnly("ch.qos.logback:logback-classic:1.5.18")
 }
 
 application {
