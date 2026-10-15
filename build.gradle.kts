@@ -33,10 +33,11 @@ repositories {
 }
 
 dependencies {
+    testImplementation(platform("org.junit:junit-bom:6.1.3"))
     testImplementation(platform("org.spockframework:spock-bom:2.4-groovy-4.0"))
     testImplementation("org.spockframework:spock-core")
+    testImplementation("org.testcontainers:testcontainers-postgresql:2.0.5")
 
-    testImplementation(platform("org.junit:junit-bom:6.1.3"))
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
     implementation("org.flywaydb:flyway-core:13.10.0")
