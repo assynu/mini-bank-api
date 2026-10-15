@@ -6,7 +6,7 @@ class AccountSpec extends Specification {
 
     def "open with zero balance"() {
         when:
-        def account = Account.open("Anna", Currency.getInstance("PLN"))
+        def account = Account.open("Anna", "PLN")
 
         then:
         account.id() != null
