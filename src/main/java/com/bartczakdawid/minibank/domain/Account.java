@@ -23,7 +23,8 @@ public record Account(UUID id, String owner, Money balance) {
         }
     }
 
-    public static Account open(String owner, Currency currency) {
+    public static Account open(String owner, String currencyKey) {
+        Currency currency = Currency.getInstance(currencyKey);
         return new Account(UUID.randomUUID(), owner, new Money(BigDecimal.ZERO, currency));
     }
 
