@@ -1,12 +1,11 @@
 package com.bartczakdawid.minibank;
 
 import com.bartczakdawid.minibank.repository.AccountRepository;
+import com.bartczakdawid.minibank.repository.Database;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import org.flywaydb.core.Flyway;
 import org.jooq.DSLContext;
-import org.jooq.SQLDialect;
-import org.jooq.impl.DSL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,7 +18,7 @@ public class App {
         DataSource dataSource = createDataSource();
         migrateDatabase(dataSource);
 
-        DSLContext dsl = DSL.using(dataSource, SQLDialect.POSTGRES);
+        DSLContext dsl = Database.createDslContext(dataSource);
         AccountRepository accountRepository = new AccountRepository(dsl);
 
         log.info("Mini Bank API started");
