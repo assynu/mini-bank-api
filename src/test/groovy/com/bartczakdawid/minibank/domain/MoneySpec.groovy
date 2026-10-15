@@ -96,4 +96,9 @@ class MoneySpec extends Specification {
         "0.00"  || false    | false
         "-0.01" || false    | true
     }
+
+    def "negate amount"() {
+        expect:
+        Money.of("100", "PLN").negate().equals(Money.of("-100", "PLN"))
+    }
 }

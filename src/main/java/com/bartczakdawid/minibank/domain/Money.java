@@ -38,6 +38,10 @@ public record Money(BigDecimal amount, Currency currency) {
         return new Money(amount.subtract(other.amount), currency);
     }
 
+    public Money negate() {
+        return new Money(amount.negate(), currency);
+    }
+
     public boolean isPositive() {
         return amount.signum() > 0;
     }
