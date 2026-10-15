@@ -1,5 +1,6 @@
 package com.bartczakdawid.minibank;
 
+import com.bartczakdawid.minibank.repository.AccountRepository;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import org.flywaydb.core.Flyway;
@@ -19,6 +20,7 @@ public class App {
         migrateDatabase(dataSource);
 
         DSLContext dsl = DSL.using(dataSource, SQLDialect.POSTGRES);
+        AccountRepository accountRepository = new AccountRepository(dsl);
 
         log.info("Mini Bank API started");
     }
