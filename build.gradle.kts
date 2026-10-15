@@ -43,6 +43,7 @@ dependencies {
     implementation("org.flywaydb:flyway-database-postgresql:13.10.0")
     implementation("org.slf4j:slf4j-api:2.0.20")
     implementation("org.jooq:jooq:3.21.9")
+    implementation("com.zaxxer:HikariCP:7.1.0")
 
     runtimeOnly("org.postgresql:postgresql:42.7.14")
     runtimeOnly("ch.qos.logback:logback-classic:1.6.5")
