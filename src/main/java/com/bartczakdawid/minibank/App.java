@@ -1,11 +1,9 @@
 package com.bartczakdawid.minibank;
 
-import com.bartczakdawid.minibank.repository.AccountHistoryRepository;
-import com.bartczakdawid.minibank.repository.AccountRepository;
-import com.bartczakdawid.minibank.repository.Database;
-import com.bartczakdawid.minibank.repository.JooqTransactions;
+import com.bartczakdawid.minibank.repository.*;
 import com.bartczakdawid.minibank.service.AccountService;
 import com.bartczakdawid.minibank.service.Transactions;
+import com.bartczakdawid.minibank.service.TransferService;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import org.flywaydb.core.Flyway;
@@ -26,9 +24,12 @@ public class App {
 
         AccountRepository accountRepository = new AccountRepository(dsl);
         AccountHistoryRepository accountHistoryRepository = new AccountHistoryRepository(dsl);
+        TransferRepository transferRepository = new TransferRepository(dsl);
+
         Transactions transactions = new JooqTransactions(dsl);
 
         AccountService accountService = new AccountService(accountRepository, accountHistoryRepository, transactions);
+        TransferService transferService = new TransferService(accountRepository, accountHistoryRepository, transferRepository, transactions);
 
         log.info("Mini Bank API started");
     }
