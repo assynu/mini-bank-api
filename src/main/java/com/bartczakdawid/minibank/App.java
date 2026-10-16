@@ -1,5 +1,7 @@
 package com.bartczakdawid.minibank;
 
+import com.bartczakdawid.minibank.api.AccountController;
+import com.bartczakdawid.minibank.api.ApiServer;
 import com.bartczakdawid.minibank.repository.*;
 import com.bartczakdawid.minibank.service.AccountService;
 import com.bartczakdawid.minibank.service.Transactions;
@@ -10,6 +12,7 @@ import org.flywaydb.core.Flyway;
 import org.jooq.DSLContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import tools.jackson.databind.json.JsonMapper;
 
 import javax.sql.DataSource;
 
@@ -31,7 +34,14 @@ public class App {
         AccountService accountService = new AccountService(accountRepository, accountHistoryRepository, transactions);
         TransferService transferService = new TransferService(accountRepository, accountHistoryRepository, transferRepository, transactions);
 
-        log.info("Mini Bank API started");
+        JsonMapper jsonMapper = JsonMapper.builder().build();
+        AccountController accountController = new AccountController(accountService, jsonMapper);
+
+        ApiServer apiServer = new ApiServer(accountController, jsonMapper);
+
+        apiServer.start(8080);
+
+        log.atInfo().addKeyValue("port", apiServer.port()).log("HTTP server started");
     }
 
     private static DataSource createDataSource() {

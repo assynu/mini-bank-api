@@ -45,6 +45,8 @@ dependencies {
     implementation("org.slf4j:slf4j-api:2.0.20")
     implementation("org.jooq:jooq:3.21.9")
     implementation("com.zaxxer:HikariCP:7.1.0")
+    implementation("com.sparkjava:spark-core:2.9.4")
+    implementation("tools.jackson.core:jackson-databind:3.2.3")
 
     runtimeOnly("org.postgresql:postgresql:42.7.14")
     runtimeOnly("ch.qos.logback:logback-classic:1.6.5")

@@ -1,0 +1,16 @@
+### open account
+POST http://localhost:8080/accounts
+Content-Type: application/json
+
+{ "owner": "Jan Kowalski", "currency": "PLN" }
+
+> {% client.global.set("accountId", response.body.id); %}
+
+### get account
+GET http://localhost:8080/accounts/{{accountId}}
+
+### deposit to account
+POST http://localhost:8080/accounts/{{accountId}}/deposits
+Content-Type: application/json
+
+{ "amount": "100.00", "currency": "PLN" }

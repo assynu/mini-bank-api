@@ -1,6 +1,7 @@
 package com.bartczakdawid.minibank.domain;
 
-public abstract class DomainException extends RuntimeException {
+public abstract sealed class DomainException extends RuntimeException permits CurrencyMismatchException, InsufficientFundsException, InvalidAmountException, SameAccountTransferException {
+
     public DomainException(String message) {
         super(message);
     }
