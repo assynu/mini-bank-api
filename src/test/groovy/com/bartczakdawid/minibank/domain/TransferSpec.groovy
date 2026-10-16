@@ -47,7 +47,7 @@ class TransferSpec extends Specification {
 
     def "reject transfer to same account"() {
         when:
-        def account = UUID.randomUUID();
+        def account = UUID.randomUUID()
         Transfer.create(account, account, Money.of("20", "PLN"))
 
         then:

@@ -1,11 +1,8 @@
 package com.bartczakdawid.minibank.domain;
 
-import java.math.BigDecimal;
 import java.util.UUID;
 
 public record AccountHistoryEntry(UUID id, UUID accountId, UUID transferId, Type type, Money amount) {
-
-    public enum Type {DEPOSIT, TRANSFER}
 
     public AccountHistoryEntry {
         if (id == null) {
@@ -24,7 +21,7 @@ public record AccountHistoryEntry(UUID id, UUID accountId, UUID transferId, Type
             throw new IllegalArgumentException("Amount cannot be null");
         }
 
-        if(!amount.isNegative() && !amount.isPositive()) {
+        if (!amount.isNegative() && !amount.isPositive()) {
             throw new IllegalArgumentException("Amount cannot be zero");
         }
 
@@ -64,4 +61,6 @@ public record AccountHistoryEntry(UUID id, UUID accountId, UUID transferId, Type
                 transfer.amount()
         );
     }
+
+    public enum Type {DEPOSIT, TRANSFER}
 }
