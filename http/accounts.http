@@ -1,16 +1,183 @@
-### open account
-POST http://localhost:8080/accounts
+@baseUrl = http://localhost:8080
+
+### Create account A
+POST {{baseUrl}}/accounts
 Content-Type: application/json
 
-{ "owner": "Jan Kowalski", "currency": "PLN" }
+{
+  "owner": "Alice",
+  "currency": "PLN"
+}
 
-> {% client.global.set("accountId", response.body.id); %}
+> {%
+    client.test("201 with Location", () => {
+        client.assert(response.status === 201);
+        client.assert(response.headers.valueOf("Location") === "/accounts/" + response.body.id);
+    });
+    client.global.set("accountA", response.body.id);
+%}
 
-### get account
-GET http://localhost:8080/accounts/{{accountId}}
-
-### deposit to account
-POST http://localhost:8080/accounts/{{accountId}}/deposits
+### Create account B
+POST {{baseUrl}}/accounts
 Content-Type: application/json
 
-{ "amount": "100.00", "currency": "PLN" }
+{
+  "owner": "Bob",
+  "currency": "PLN"
+}
+
+> {%
+    client.test("201", () => client.assert(response.status === 201));
+    client.global.set("accountB", response.body.id);
+%}
+
+### Get account A
+GET {{baseUrl}}/accounts/{{accountA}}
+
+> {%
+    client.test("200", () => client.assert(response.status === 200));
+%}
+
+### Deposit 100.00 to A
+POST {{baseUrl}}/accounts/{{accountA}}/deposits
+Content-Type: application/json
+
+{
+  "amount": "100.00",
+  "currency": "PLN"
+}
+
+> {%
+    client.test("balance 100.00", () => {
+        client.assert(response.status === 200);
+        client.assert(response.body.balance === "100.00");
+    });
+%}
+
+### Transfer 30.00 from A to B
+POST {{baseUrl}}/transfers
+Content-Type: application/json
+
+{
+  "fromAccountId": "{{accountA}}",
+  "toAccountId": "{{accountB}}",
+  "amount": "30.00",
+  "currency": "PLN"
+}
+
+> {%
+    client.test("201 with Location", () => {
+        client.assert(response.status === 201);
+        client.assert(response.headers.valueOf("Location") === "/transfers/" + response.body.id);
+    });
+    client.global.set("transferId", response.body.id);
+%}
+
+### Get transfer
+GET {{baseUrl}}/transfers/{{transferId}}
+
+> {%
+    client.test("200", () => client.assert(response.status === 200));
+%}
+
+### Balance of A is 70.00
+GET {{baseUrl}}/accounts/{{accountA}}
+
+> {%
+    client.test("balance 70.00", () => client.assert(response.body.balance === "70.00"));
+%}
+
+### Balance of B is 30.00
+GET {{baseUrl}}/accounts/{{accountB}}
+
+> {%
+    client.test("balance 30.00", () => client.assert(response.body.balance === "30.00"));
+%}
+
+### History of A (step 4)
+GET {{baseUrl}}/accounts/{{accountA}}/transactions
+
+> {%
+    client.test("2 entries, newest first", () => {
+        client.assert(response.status === 200);
+        client.assert(response.body.length === 2);
+        client.assert(response.body[0].type === "TRANSFER");
+    });
+%}
+
+### Error: unknown account -> 404 ACCOUNT_NOT_FOUND
+GET {{baseUrl}}/accounts/00000000-0000-0000-0000-000000000000
+
+> {%
+    client.test("404", () => client.assert(response.body.error === "ACCOUNT_NOT_FOUND"));
+%}
+
+### Error: unknown transfer -> 404 TRANSFER_NOT_FOUND
+GET {{baseUrl}}/transfers/00000000-0000-0000-0000-000000000000
+
+> {%
+    client.test("404", () => client.assert(response.body.error === "TRANSFER_NOT_FOUND"));
+%}
+
+### Error: insufficient funds -> 422 INSUFFICIENT_FUNDS
+POST {{baseUrl}}/transfers
+Content-Type: application/json
+
+{
+  "fromAccountId": "{{accountB}}",
+  "toAccountId": "{{accountA}}",
+  "amount": "1000.00",
+  "currency": "PLN"
+}
+
+> {%
+    client.test("422", () => client.assert(response.body.error === "INSUFFICIENT_FUNDS"));
+%}
+
+### Error: same account -> 422 SAME_ACCOUNT_TRANSFER
+POST {{baseUrl}}/transfers
+Content-Type: application/json
+
+{
+  "fromAccountId": "{{accountA}}",
+  "toAccountId": "{{accountA}}",
+  "amount": "10.00",
+  "currency": "PLN"
+}
+
+> {%
+    client.test("422", () => client.assert(response.body.error === "SAME_ACCOUNT_TRANSFER"));
+%}
+
+### Error: missing field -> 400 INVALID_REQUEST
+POST {{baseUrl}}/accounts
+Content-Type: application/json
+
+{
+  "owner": "Alice"
+}
+
+> {%
+    client.test("400", () => client.assert(response.body.error === "INVALID_REQUEST"));
+%}
+
+### Error: unknown field -> 400 MALFORMED_REQUEST
+POST {{baseUrl}}/accounts
+Content-Type: application/json
+
+{
+  "owner": "Alice",
+  "currency": "PLN",
+  "extra": 1
+}
+
+> {%
+    client.test("400", () => client.assert(response.body.error === "MALFORMED_REQUEST"));
+%}
+
+### Error: unknown route -> 404 NOT_FOUND
+GET {{baseUrl}}/nope
+
+> {%
+    client.test("404", () => client.assert(response.body.error === "NOT_FOUND"));
+%}

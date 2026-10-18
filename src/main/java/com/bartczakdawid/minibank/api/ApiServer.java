@@ -32,6 +32,7 @@ public class ApiServer {
         http.post("/transfers", transferController::create);
 
         http.get("/accounts/:id", accountController::get);
+        http.get("/accounts/:id/transactions", accountController::transactions);
         http.get("/transfers/:id", transferController::get);
 
         http.after((request, response) -> response.type("application/json"));

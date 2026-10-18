@@ -6,6 +6,7 @@ import com.bartczakdawid.minibank.domain.Money;
 import com.bartczakdawid.minibank.repository.AccountHistoryRepository;
 import com.bartczakdawid.minibank.repository.AccountRepository;
 
+import java.util.List;
 import java.util.UUID;
 
 public class AccountService {
@@ -29,6 +30,13 @@ public class AccountService {
     public Account get(UUID accountId) {
         return accountRepository.findById(accountId)
                 .orElseThrow(() -> new AccountNotFoundException(accountId));
+    }
+
+    public List<AccountHistoryEntry> history(UUID accountId) {
+        /* May seem unnecessary but makes sure account exists */
+        Account account = get(accountId);
+
+        return accountHistoryRepository.findByAccountId(account.id());
     }
 
     public Account deposit(UUID accountId, Money amount) {

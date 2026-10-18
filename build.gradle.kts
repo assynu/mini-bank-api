@@ -50,6 +50,8 @@ dependencies {
 
     runtimeOnly("org.postgresql:postgresql:42.7.14")
     runtimeOnly("ch.qos.logback:logback-classic:1.6.5")
+
+    compileOnly("jakarta.xml.bind:jakarta.xml.bind-api:4.0.5")
 }
 
 application {

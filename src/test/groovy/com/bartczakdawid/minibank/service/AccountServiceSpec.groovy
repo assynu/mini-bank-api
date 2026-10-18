@@ -75,4 +75,26 @@ class AccountServiceSpec extends IntegrationSpec {
         "-1.00"  | "PLN"    || InvalidAmountException
         "100.00" | "EUR"    || CurrencyMismatchException
     }
+
+    def "history"() {
+        given:
+        def account = service.open("Jan Kowalski", "PLN")
+        service.deposit(account.id(), Money.of("100.00", "PLN"))
+        service.deposit(account.id(), Money.of("50.00", "PLN"))
+
+        when:
+        def entries = service.history(account.id())
+
+        then:
+        entries*.amount() == [Money.of("50.00", "PLN"), Money.of("100.00", "PLN")]
+        entries*.type() == [AccountHistoryEntry.Type.DEPOSIT, AccountHistoryEntry.Type.DEPOSIT]
+    }
+
+    def "reject history of unknown account"() {
+        when:
+        service.history(UUID.randomUUID())
+
+        then:
+        thrown(AccountNotFoundException)
+    }
 }

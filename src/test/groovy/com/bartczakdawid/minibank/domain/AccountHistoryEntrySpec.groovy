@@ -2,6 +2,9 @@ package com.bartczakdawid.minibank.domain
 
 import spock.lang.Specification
 
+import java.time.Instant
+import java.time.temporal.ChronoUnit
+
 class AccountHistoryEntrySpec extends Specification {
 
     def "deposit"() {
@@ -58,7 +61,7 @@ class AccountHistoryEntrySpec extends Specification {
     def "reject deposit with transfer id"() {
         when:
         new AccountHistoryEntry(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
-                AccountHistoryEntry.Type.DEPOSIT, Money.of("1.00", "PLN"))
+                AccountHistoryEntry.Type.DEPOSIT, Money.of("1.00", "PLN"), Instant.now())
 
         then:
         thrown(IllegalArgumentException)
@@ -67,7 +70,7 @@ class AccountHistoryEntrySpec extends Specification {
     def "reject transfer without transfer id"() {
         when:
         new AccountHistoryEntry(UUID.randomUUID(), UUID.randomUUID(), null,
-                AccountHistoryEntry.Type.TRANSFER, Money.of("1.00", "PLN"))
+                AccountHistoryEntry.Type.TRANSFER, Money.of("1.00", "PLN"), Instant.now())
 
         then:
         thrown(IllegalArgumentException)
@@ -75,7 +78,7 @@ class AccountHistoryEntrySpec extends Specification {
 
     def "reject null #field"() {
         when:
-        new AccountHistoryEntry(id, accountId, null, type, amount)
+        new AccountHistoryEntry(id, accountId, null, type, amount, Instant.now())
 
         then:
         thrown(IllegalArgumentException)
@@ -86,5 +89,18 @@ class AccountHistoryEntrySpec extends Specification {
         "accountId" | UUID.randomUUID() | null              | AccountHistoryEntry.Type.DEPOSIT | Money.of("1.00", "PLN")
         "type"      | UUID.randomUUID() | UUID.randomUUID() | null                             | Money.of("1.00", "PLN")
         "amount"    | UUID.randomUUID() | UUID.randomUUID() | AccountHistoryEntry.Type.DEPOSIT | null
+    }
+
+    def "set createdAt"() {
+        given:
+        def before = Instant.now().truncatedTo(ChronoUnit.MICROS)
+
+        when:
+        def entry = AccountHistoryEntry.deposit(UUID.randomUUID(), Money.of("100.00", "PLN"))
+
+        then:
+        !entry.createdAt().isBefore(before)
+        !entry.createdAt().isAfter(Instant.now())
+        entry.createdAt() == entry.createdAt().truncatedTo(ChronoUnit.MICROS)
     }
 }

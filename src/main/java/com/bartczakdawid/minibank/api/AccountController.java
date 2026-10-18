@@ -1,12 +1,14 @@
 package com.bartczakdawid.minibank.api;
 
 import com.bartczakdawid.minibank.domain.Account;
+import com.bartczakdawid.minibank.domain.AccountHistoryEntry;
 import com.bartczakdawid.minibank.domain.Money;
 import com.bartczakdawid.minibank.service.AccountService;
 import spark.Request;
 import spark.Response;
 import tools.jackson.databind.json.JsonMapper;
 
+import java.util.List;
 import java.util.UUID;
 
 public class AccountController {
@@ -36,8 +38,16 @@ public class AccountController {
         return jsonMapper.writeValueAsString(AccountResponse.from(account));
     }
 
+    public String transactions(Request request, Response response) {
+        UUID accountId = accountId(request);
+        List<AccountHistoryEntry> history = accountService.history(accountId);
+        List<AccountHistoryEntryResponse> historyResponse = history.stream().map(AccountHistoryEntryResponse::from).toList();
+
+        return jsonMapper.writeValueAsString(historyResponse);
+    }
+
     public String deposit(Request request, Response response) {
-        var body =  jsonMapper.readValue(request.body(), DepositRequest.class);
+        var body = jsonMapper.readValue(request.body(), DepositRequest.class);
 
         UUID accountId = accountId(request);
         Account account = accountService.deposit(accountId, Money.of(body.amount(), body.currency()));
