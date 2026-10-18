@@ -53,6 +53,47 @@ class AccountApiSpec extends ApiSpec {
         jsonMapper.readValue(response.body(), ErrorResponse).error() == "ACCOUNT_NOT_FOUND"
     }
 
+    def "get history"() {
+        given:
+        def created = jsonMapper.readValue(post("/accounts", '{"owner":"Anna","currency":"PLN"}').body(), AccountResponse)
+        post("/accounts/${created.id()}/deposits", '{"amount":"100.00","currency":"PLN"}')
+        post("/accounts/${created.id()}/deposits", '{"amount":"50.00","currency":"PLN"}')
+
+        when:
+        def response = get("/accounts/${created.id()}/transactions")
+
+        then:
+        response.statusCode() == 200
+
+        and:
+        def entries = jsonMapper.readValue(response.body(), AccountHistoryEntryResponse[])
+        entries*.amount() == ["50.00", "100.00"]
+        entries*.type() == ["DEPOSIT", "DEPOSIT"]
+        entries*.currency() == ["PLN", "PLN"]
+        entries*.transferId() == [null, null]
+    }
+
+    def "get empty history"() {
+        given:
+        def created = jsonMapper.readValue(post("/accounts", '{"owner":"Anna","currency":"PLN"}').body(), AccountResponse)
+
+        when:
+        def response = get("/accounts/${created.id()}/transactions")
+
+        then:
+        response.statusCode() == 200
+        response.body() == "[]"
+    }
+
+    def "reject history of unknown account"() {
+        when:
+        def response = get("/accounts/${UUID.randomUUID()}/transactions")
+
+        then:
+        response.statusCode() == 404
+        jsonMapper.readValue(response.body(), ErrorResponse).error() == "ACCOUNT_NOT_FOUND"
+    }
+
     def "reject invalid id"() {
         when:
         def response = get("/accounts/abc")
@@ -77,11 +118,11 @@ class AccountApiSpec extends ApiSpec {
         jsonMapper.readValue(get("/accounts/${created.id()}").body(), AccountResponse).balance() == "0.00"
 
         where:
-        description              | body                                     || status | error
-        "of zero"                | '{"amount":"0.00","currency":"PLN"}'     || 422    | "INVALID_AMOUNT"
-        "in different currency"  | '{"amount":"100.00","currency":"EUR"}'   || 422    | "CURRENCY_MISMATCH"
-        "with too many decimals" | '{"amount":"10.001","currency":"PLN"}'   || 400    | "INVALID_REQUEST"
-        "with non-numeric amount"| '{"amount":"abc","currency":"PLN"}'      || 400    | "INVALID_REQUEST"
+        description               | body                                   || status | error
+        "of zero"                 | '{"amount":"0.00","currency":"PLN"}'   || 422    | "INVALID_AMOUNT"
+        "in different currency"   | '{"amount":"100.00","currency":"EUR"}' || 422    | "CURRENCY_MISMATCH"
+        "with too many decimals"  | '{"amount":"10.001","currency":"PLN"}' || 400    | "INVALID_REQUEST"
+        "with non-numeric amount" | '{"amount":"abc","currency":"PLN"}'    || 400    | "INVALID_REQUEST"
     }
 
     def "reject malformed request: #description"() {
