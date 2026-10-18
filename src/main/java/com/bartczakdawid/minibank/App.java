@@ -2,6 +2,7 @@ package com.bartczakdawid.minibank;
 
 import com.bartczakdawid.minibank.api.AccountController;
 import com.bartczakdawid.minibank.api.ApiServer;
+import com.bartczakdawid.minibank.api.Json;
 import com.bartczakdawid.minibank.repository.*;
 import com.bartczakdawid.minibank.service.AccountService;
 import com.bartczakdawid.minibank.service.Transactions;
@@ -34,14 +35,20 @@ public class App {
         AccountService accountService = new AccountService(accountRepository, accountHistoryRepository, transactions);
         TransferService transferService = new TransferService(accountRepository, accountHistoryRepository, transferRepository, transactions);
 
-        JsonMapper jsonMapper = JsonMapper.builder().build();
+        JsonMapper jsonMapper = Json.mapper();
         AccountController accountController = new AccountController(accountService, jsonMapper);
 
         ApiServer apiServer = new ApiServer(accountController, jsonMapper);
 
-        apiServer.start(8080);
+        int port = Integer.parseInt(getEnv("PORT", "8080"));
+        apiServer.start(port);
 
         log.atInfo().addKeyValue("port", apiServer.port()).log("HTTP server started");
+
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            log.info("Manually shutting down");
+            apiServer.stop();
+        }));
     }
 
     private static DataSource createDataSource() {
@@ -55,19 +62,11 @@ public class App {
     }
 
     private static void migrateDatabase(DataSource dataSource) {
-        var migrationResult = Flyway.configure()
-                .dataSource(dataSource)
-                .load()
-                .migrate();
+        var migrationResult = Flyway.configure().dataSource(dataSource).load().migrate();
 
-        String version = migrationResult.targetSchemaVersion != null
-                ? migrationResult.targetSchemaVersion
-                : migrationResult.initialSchemaVersion;
+        String version = migrationResult.targetSchemaVersion != null ? migrationResult.targetSchemaVersion : migrationResult.initialSchemaVersion;
 
-        log.atInfo()
-                .addKeyValue("applied", migrationResult.migrationsExecuted)
-                .addKeyValue("version", version)
-                .log("Database migrated");
+        log.atInfo().addKeyValue("applied", migrationResult.migrationsExecuted).addKeyValue("version", version).log("Database migrated");
     }
 
     private static String getEnv(String name, String defaultValue) {
