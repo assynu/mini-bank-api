@@ -3,9 +3,12 @@ package com.bartczakdawid.minibank
 import com.bartczakdawid.minibank.api.AccountController
 import com.bartczakdawid.minibank.api.ApiServer
 import com.bartczakdawid.minibank.api.Json
+import com.bartczakdawid.minibank.api.TransferController
 import com.bartczakdawid.minibank.repository.AccountHistoryRepository
 import com.bartczakdawid.minibank.repository.AccountRepository
+import com.bartczakdawid.minibank.repository.TransferRepository
 import com.bartczakdawid.minibank.service.AccountService
+import com.bartczakdawid.minibank.service.TransferService
 import spock.lang.Shared
 import tools.jackson.databind.json.JsonMapper
 
@@ -16,7 +19,7 @@ import java.net.http.HttpResponse
 abstract class ApiSpec extends IntegrationSpec {
 
     @Shared
-    JsonMapper json = Json.mapper()
+    JsonMapper jsonMapper = Json.mapper()
 
     @Shared
     HttpClient client = HttpClient.newHttpClient()
@@ -29,12 +32,18 @@ abstract class ApiSpec extends IntegrationSpec {
         def accountHistoryRepository = new AccountHistoryRepository(dsl)
         def accountService = new AccountService(accountRepository, accountHistoryRepository, transactions)
 
-        server = new ApiServer(new AccountController(accountService, json), json)
+        def transferRepository = new TransferRepository(dsl)
+        def transferService = new TransferService(accountRepository, accountHistoryRepository, transferRepository, transactions)
+
+        def accountController = new AccountController(accountService, jsonMapper)
+        def transferController = new TransferController(transferService, jsonMapper)
+
+        server = new ApiServer(accountController, transferController, jsonMapper)
         server.start(0)
     }
 
     def cleanupSpec() {
-        server.stop()
+        server?.stop()
     }
 
     HttpResponse<String> get(String path) {

@@ -3,6 +3,7 @@ package com.bartczakdawid.minibank;
 import com.bartczakdawid.minibank.api.AccountController;
 import com.bartczakdawid.minibank.api.ApiServer;
 import com.bartczakdawid.minibank.api.Json;
+import com.bartczakdawid.minibank.api.TransferController;
 import com.bartczakdawid.minibank.repository.*;
 import com.bartczakdawid.minibank.service.AccountService;
 import com.bartczakdawid.minibank.service.Transactions;
@@ -37,8 +38,9 @@ public class App {
 
         JsonMapper jsonMapper = Json.mapper();
         AccountController accountController = new AccountController(accountService, jsonMapper);
+        TransferController transferController = new TransferController(transferService, jsonMapper);
 
-        ApiServer apiServer = new ApiServer(accountController, jsonMapper);
+        ApiServer apiServer = new ApiServer(accountController, transferController, jsonMapper);
 
         int port = Integer.parseInt(getEnv("PORT", "8080"));
         apiServer.start(port);

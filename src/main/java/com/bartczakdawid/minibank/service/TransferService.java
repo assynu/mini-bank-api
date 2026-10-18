@@ -45,6 +45,10 @@ public class TransferService {
         });
     }
 
+    public Transfer get(UUID transferId) {
+        return transferRepository.findById(transferId).orElseThrow();
+    }
+
     private Account findAccount(UUID accountId) {
         return accountRepository.findById(accountId).orElseThrow(() -> new AccountNotFoundException(accountId));
     }

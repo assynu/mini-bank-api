@@ -2,6 +2,7 @@ package com.bartczakdawid.minibank.api;
 
 import com.bartczakdawid.minibank.domain.*;
 import com.bartczakdawid.minibank.service.AccountNotFoundException;
+import com.bartczakdawid.minibank.service.TransferNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Response;
@@ -12,21 +13,26 @@ import tools.jackson.databind.json.JsonMapper;
 public class ApiServer {
     private static final Logger log = LoggerFactory.getLogger(ApiServer.class);
 
-    private final AccountController accounts;
+    private final AccountController accountController;
+    private final TransferController transferController;
     private final JsonMapper json;
     private Service http;
 
-    public ApiServer(AccountController accounts, JsonMapper json) {
-        this.accounts = accounts;
+    public ApiServer(AccountController accountController, TransferController transferController, JsonMapper json) {
+        this.accountController = accountController;
+        this.transferController = transferController;
         this.json = json;
     }
 
     public void start(int port) {
         http = Service.ignite().port(port);
 
-        http.post("/accounts", accounts::create);
-        http.get("/accounts/:id", accounts::get);
-        http.post("/accounts/:id/deposits", accounts::deposit);
+        http.post("/accounts", accountController::create);
+        http.post("/accounts/:id/deposits", accountController::deposit);
+        http.post("/transfers", transferController::create);
+
+        http.get("/accounts/:id", accountController::get);
+        http.get("/transfers/:id", transferController::get);
 
         http.after((request, response) -> response.type("application/json"));
 
@@ -49,6 +55,10 @@ public class ApiServer {
         http.exception(Exception.class, (exception, request, response) -> {
             log.error("Unhandled error", exception);
             error(response, 500, "INTERNAL_ERROR", "Unexpected error");
+        });
+
+        http.exception(TransferNotFoundException.class, (exception, request, response) -> {
+            error(response, 404, "TRANSFER_NOT_FOUND", exception.getMessage());
         });
 
         http.notFound((request, response) -> {

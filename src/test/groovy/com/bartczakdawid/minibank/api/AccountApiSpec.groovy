@@ -12,7 +12,7 @@ class AccountApiSpec extends ApiSpec {
         response.statusCode() == 201
 
         and:
-        def account = json.readValue(response.body(), AccountResponse)
+        def account = jsonMapper.readValue(response.body(), AccountResponse)
         account.owner() == "Anna"
         account.currency() == "PLN"
         account.balance() == "0.00"
@@ -22,26 +22,26 @@ class AccountApiSpec extends ApiSpec {
 
     def "get account"() {
         given:
-        def created = json.readValue(post("/accounts", '{"owner":"Anna","currency":"PLN"}').body(), AccountResponse)
+        def created = jsonMapper.readValue(post("/accounts", '{"owner":"Anna","currency":"PLN"}').body(), AccountResponse)
 
         when:
         def response = get("/accounts/${created.id()}")
 
         then:
         response.statusCode() == 200
-        json.readValue(response.body(), AccountResponse) == created
+        jsonMapper.readValue(response.body(), AccountResponse) == created
     }
 
     def "deposit"() {
         given:
-        def created = json.readValue(post("/accounts", '{"owner":"Anna","currency":"PLN"}').body(), AccountResponse)
+        def created = jsonMapper.readValue(post("/accounts", '{"owner":"Anna","currency":"PLN"}').body(), AccountResponse)
 
         when:
         def response = post("/accounts/${created.id()}/deposits", '{"amount":"100.00","currency":"PLN"}')
 
         then:
         response.statusCode() == 200
-        json.readValue(response.body(), AccountResponse).balance() == "100.00"
+        jsonMapper.readValue(response.body(), AccountResponse).balance() == "100.00"
     }
 
     def "reject unknown account"() {
@@ -50,7 +50,7 @@ class AccountApiSpec extends ApiSpec {
 
         then:
         response.statusCode() == 404
-        json.readValue(response.body(), ErrorResponse).error() == "ACCOUNT_NOT_FOUND"
+        jsonMapper.readValue(response.body(), ErrorResponse).error() == "ACCOUNT_NOT_FOUND"
     }
 
     def "reject invalid id"() {
@@ -59,22 +59,22 @@ class AccountApiSpec extends ApiSpec {
 
         then:
         response.statusCode() == 400
-        json.readValue(response.body(), ErrorResponse).error() == "INVALID_REQUEST"
+        jsonMapper.readValue(response.body(), ErrorResponse).error() == "INVALID_REQUEST"
     }
 
     def "reject deposit #description"() {
         given:
-        def created = json.readValue(post("/accounts", '{"owner":"Anna","currency":"PLN"}').body(), AccountResponse)
+        def created = jsonMapper.readValue(post("/accounts", '{"owner":"Anna","currency":"PLN"}').body(), AccountResponse)
 
         when:
         def response = post("/accounts/${created.id()}/deposits", body)
 
         then:
         response.statusCode() == status
-        json.readValue(response.body(), ErrorResponse).error() == error
+        jsonMapper.readValue(response.body(), ErrorResponse).error() == error
 
         and:
-        json.readValue(get("/accounts/${created.id()}").body(), AccountResponse).balance() == "0.00"
+        jsonMapper.readValue(get("/accounts/${created.id()}").body(), AccountResponse).balance() == "0.00"
 
         where:
         description              | body                                     || status | error
@@ -90,7 +90,7 @@ class AccountApiSpec extends ApiSpec {
 
         then:
         response.statusCode() == 400
-        json.readValue(response.body(), ErrorResponse).error() == "MALFORMED_REQUEST"
+        jsonMapper.readValue(response.body(), ErrorResponse).error() == "MALFORMED_REQUEST"
 
         where:
         description     | body
@@ -106,6 +106,6 @@ class AccountApiSpec extends ApiSpec {
 
         then:
         response.statusCode() == 404
-        json.readValue(response.body(), ErrorResponse).error() == "NOT_FOUND"
+        jsonMapper.readValue(response.body(), ErrorResponse).error() == "NOT_FOUND"
     }
 }
