@@ -53,11 +53,6 @@ public class ApiServer {
             error(response, 400, "INVALID_REQUEST", exception.getMessage());
         });
 
-        http.exception(Exception.class, (exception, request, response) -> {
-            log.error("Unhandled error", exception);
-            error(response, 500, "INTERNAL_ERROR", "Unexpected error");
-        });
-
         http.exception(TransferNotFoundException.class, (exception, request, response) -> {
             error(response, 404, "TRANSFER_NOT_FOUND", exception.getMessage());
         });
@@ -65,6 +60,11 @@ public class ApiServer {
         http.notFound((request, response) -> {
             response.type("application/json");
             return json.writeValueAsString(new ErrorResponse("NOT_FOUND", "No such endpoint"));
+        });
+
+        http.exception(Exception.class, (exception, request, response) -> {
+            log.error("Unhandled error", exception);
+            error(response, 500, "INTERNAL_ERROR", "Unexpected error");
         });
 
         http.awaitInitialization();
