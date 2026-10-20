@@ -33,7 +33,7 @@ public class TransferController {
         return jsonMapper.writeValueAsString(TransferResponse.from(transfer));
     }
 
-    public String get(Request request, Response response) {
+    public String get(Request request, Response ignoredResponse) {
         var transferId = transferId(request);
         Transfer transfer = transferService.get(transferId);
 

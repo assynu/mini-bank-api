@@ -31,14 +31,14 @@ public class AccountController {
         return jsonMapper.writeValueAsString(AccountResponse.from(account));
     }
 
-    public String get(Request request, Response response) {
+    public String get(Request request, Response ignoredResponse) {
         UUID accountId = accountId(request);
         Account account = accountService.get(accountId);
 
         return jsonMapper.writeValueAsString(AccountResponse.from(account));
     }
 
-    public String transactions(Request request, Response response) {
+    public String transactions(Request request, Response ignoredResponse) {
         UUID accountId = accountId(request);
         List<AccountHistoryEntry> history = accountService.history(accountId);
         List<AccountHistoryEntryResponse> historyResponse = history.stream().map(AccountHistoryEntryResponse::from).toList();
@@ -46,7 +46,7 @@ public class AccountController {
         return jsonMapper.writeValueAsString(historyResponse);
     }
 
-    public String deposit(Request request, Response response) {
+    public String deposit(Request request, Response ignoredResponse) {
         var body = jsonMapper.readValue(request.body(), DepositRequest.class);
 
         UUID accountId = accountId(request);
