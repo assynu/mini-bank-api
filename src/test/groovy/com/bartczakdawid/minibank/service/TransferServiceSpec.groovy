@@ -122,6 +122,25 @@ class TransferServiceSpec extends IntegrationSpec {
         transferEntries(anna.id()).isEmpty()
     }
 
+    def "get transfer"() {
+        given:
+        def anna = accountService.open("Anna", "PLN")
+        def jan = accountService.open("Jan", "PLN")
+        accountService.deposit(anna.id(), Money.of("100.00", "PLN"))
+        def transfer = transferService.transfer(anna.id(), jan.id(), Money.of("30.00", "PLN"))
+
+        expect:
+        transferService.get(transfer.id()) == transfer
+    }
+
+    def "reject unknown transfer"() {
+        when:
+        transferService.get(UUID.randomUUID())
+
+        then:
+        thrown(TransferNotFoundException)
+    }
+
     private List<AccountHistoryEntry> transferEntries(UUID accountId) {
         historyRepository.findByAccountId(accountId).findAll { it.type() == AccountHistoryEntry.Type.TRANSFER }
     }
