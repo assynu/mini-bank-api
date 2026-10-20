@@ -6,6 +6,8 @@ import com.bartczakdawid.minibank.domain.AccountHistoryEntry
 import com.bartczakdawid.minibank.domain.Money
 import org.jooq.exception.DataAccessException
 
+import java.time.Instant
+
 class AccountHistoryRepositorySpec extends IntegrationSpec {
 
     def accounts = new AccountRepository(dsl)
@@ -52,5 +54,21 @@ class AccountHistoryRepositorySpec extends IntegrationSpec {
 
         then:
         thrown(DataAccessException)
+    }
+
+    def "find newest first"() {
+        given:
+        def account = Account.open("Jan Kowalski", "PLN")
+
+        accounts.insert(account)
+
+        def older = new AccountHistoryEntry(UUID.randomUUID(), account.id(), null, AccountHistoryEntry.Type.DEPOSIT, Money.of("10.00", "PLN"), Instant.parse("2026-01-01T10:00:00Z"))
+        def newer = new AccountHistoryEntry(UUID.randomUUID(), account.id(), null, AccountHistoryEntry.Type.DEPOSIT, Money.of("20.00", "PLN"), Instant.parse("2026-01-01T11:00:00Z"))
+
+        history.insert(older)
+        history.insert(newer)
+
+        expect:
+        history.findByAccountId(account.id()) == [newer, older]
     }
 }
