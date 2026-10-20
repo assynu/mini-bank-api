@@ -48,7 +48,7 @@ public class App {
         log.atInfo().addKeyValue("port", apiServer.port()).log("HTTP server started");
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            log.info("Manually shutting down");
+            log.info("Shutting down");
             apiServer.stop();
         }));
     }

@@ -7,10 +7,14 @@ import com.bartczakdawid.minibank.domain.Transfer;
 import com.bartczakdawid.minibank.repository.AccountHistoryRepository;
 import com.bartczakdawid.minibank.repository.AccountRepository;
 import com.bartczakdawid.minibank.repository.TransferRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.UUID;
 
 public class TransferService {
+    private static final Logger log =  LoggerFactory.getLogger(TransferService.class);
+
     private final AccountRepository accountRepository;
     private final AccountHistoryRepository accountHistoryRepository;
     private final TransferRepository transferRepository;
@@ -26,7 +30,7 @@ public class TransferService {
     public Transfer transfer(UUID fromAccountId, UUID toAccountId, Money amount) {
         Transfer transfer = Transfer.create(fromAccountId, toAccountId, amount);
 
-        return transactions.inTransaction(() -> {
+        Transfer completed = transactions.inTransaction(() -> {
             Account fromAccount = findAccount(fromAccountId);
             Account toAccount = findAccount(toAccountId);
 
@@ -43,6 +47,16 @@ public class TransferService {
 
             return transfer;
         });
+
+        log.atInfo()
+                .addKeyValue("transferId", completed.id())
+                .addKeyValue("fromAccountId", completed.fromAccountId())
+                .addKeyValue("toAccountId", completed.toAccountId())
+                .addKeyValue("amount", completed.amount().amount().toPlainString())
+                .addKeyValue("currency", completed.amount().currency())
+                .log("Transfer completed");
+
+        return completed;
     }
 
     public Transfer get(UUID transferId) {

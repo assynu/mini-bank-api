@@ -5,11 +5,15 @@ import com.bartczakdawid.minibank.domain.AccountHistoryEntry;
 import com.bartczakdawid.minibank.domain.Money;
 import com.bartczakdawid.minibank.repository.AccountHistoryRepository;
 import com.bartczakdawid.minibank.repository.AccountRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.UUID;
 
 public class AccountService {
+
+    private static final Logger log = LoggerFactory.getLogger(AccountService.class);
 
     private final AccountRepository accountRepository;
     private final AccountHistoryRepository accountHistoryRepository;
@@ -24,6 +28,12 @@ public class AccountService {
     public Account open(String owner, String currencyCode) {
         Account account = Account.open(owner, currencyCode);
         accountRepository.insert(account);
+
+        log.atInfo()
+                .addKeyValue("accountId", account.id())
+                .addKeyValue("currency", account.currency())
+                .log("Account opened");
+
         return account;
     }
 
@@ -40,13 +50,21 @@ public class AccountService {
     }
 
     public Account deposit(UUID accountId, Money amount) {
-        return transactions.inTransaction(() -> {
-            Account credited = get(accountId).credit(amount);
+        Account credited = transactions.inTransaction(() -> {
+            Account account = get(accountId).credit(amount);
 
-            accountRepository.update(credited);
+            accountRepository.update(account);
             accountHistoryRepository.insert(AccountHistoryEntry.deposit(accountId, amount));
 
-            return credited;
+            return account;
         });
+
+        log.atInfo()
+                .addKeyValue("accountId", accountId)
+                .addKeyValue("amount", amount.amount().toPlainString())
+                .addKeyValue("currency", amount.currency())
+                .log("Deposit completed");
+
+        return credited;
     }
 }

@@ -5,10 +5,13 @@ import com.bartczakdawid.minibank.service.AccountNotFoundException;
 import com.bartczakdawid.minibank.service.TransferNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import spark.Response;
 import spark.Service;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.json.JsonMapper;
+
+import java.util.UUID;
 
 public class ApiServer {
     private static final Logger log = LoggerFactory.getLogger(ApiServer.class);
@@ -26,6 +29,27 @@ public class ApiServer {
 
     public void start(int port) {
         http = Service.ignite().port(port);
+
+        http.before((request, response) -> {
+            String requestId = UUID.randomUUID().toString();
+            MDC.put("requestId", requestId);
+            request.attribute("startNanos", System.nanoTime());
+            response.header("X-Request-Id", requestId);
+        });
+
+        http.afterAfter((request, response) -> {
+            long startNanos = request.attribute("startNanos");
+            long durationMs = (System.nanoTime() - startNanos) / 1_000_000;
+
+            log.atInfo()
+                    .addKeyValue("method", request.requestMethod())
+                    .addKeyValue("path", request.pathInfo())
+                    .addKeyValue("status", response.status())
+                    .addKeyValue("durationMs", durationMs)
+                    .log("HTTP request");
+
+            MDC.remove("requestId");
+        });
 
         http.post("/accounts", accountController::create);
         http.post("/accounts/:id/deposits", accountController::deposit);
