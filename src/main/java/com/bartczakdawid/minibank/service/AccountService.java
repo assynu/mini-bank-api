@@ -51,7 +51,9 @@ public class AccountService {
 
     public Account deposit(UUID accountId, Money amount) {
         Account credited = transactions.inTransaction(() -> {
-            Account account = get(accountId).credit(amount);
+            Account account = accountRepository.findByIdForUpdate(accountId)
+                    .orElseThrow(() -> new AccountNotFoundException(accountId))
+                    .credit(amount);
 
             accountRepository.update(account);
             accountHistoryRepository.insert(AccountHistoryEntry.deposit(accountId, amount));

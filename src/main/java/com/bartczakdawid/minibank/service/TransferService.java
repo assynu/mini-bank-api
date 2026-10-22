@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory;
 import java.util.UUID;
 
 public class TransferService {
-    private static final Logger log =  LoggerFactory.getLogger(TransferService.class);
+    private static final Logger log = LoggerFactory.getLogger(TransferService.class);
 
     private final AccountRepository accountRepository;
     private final AccountHistoryRepository accountHistoryRepository;
@@ -64,6 +64,7 @@ public class TransferService {
     }
 
     private Account findAccount(UUID accountId) {
-        return accountRepository.findById(accountId).orElseThrow(() -> new AccountNotFoundException(accountId));
+        return accountRepository.findByIdForUpdate(accountId)
+                .orElseThrow(() -> new AccountNotFoundException(accountId));
     }
 }

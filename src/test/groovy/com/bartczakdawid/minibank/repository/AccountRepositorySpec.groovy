@@ -80,4 +80,18 @@ class AccountRepositorySpec extends IntegrationSpec {
         then:
         thrown(DataAccessException)
     }
+
+    def "insert and find for update"() {
+        given:
+        def account = Account.open("Jan Kowalski", "PLN")
+        repository.insert(account)
+
+        expect:
+        repository.findByIdForUpdate(account.id()) == Optional.of(account)
+    }
+
+    def "find non-existent id for update"() {
+        expect:
+        repository.findByIdForUpdate(UUID.randomUUID()).isEmpty()
+    }
 }

@@ -52,4 +52,13 @@ public class AccountRepository {
 
         return new Account(record.getId(), record.getOwner(), balance);
     }
+
+    public Optional<Account> findByIdForUpdate(UUID id) {
+        AccountsRecord record = dsl.selectFrom(ACCOUNTS)
+                .where(ACCOUNTS.ID.eq(id))
+                .forUpdate()
+                .fetchOne();
+
+        return Optional.ofNullable(record).map(this::toAccount);
+    }
 }
