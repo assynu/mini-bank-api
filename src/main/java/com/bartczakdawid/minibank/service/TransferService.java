@@ -31,8 +31,13 @@ public class TransferService {
         Transfer transfer = Transfer.create(fromAccountId, toAccountId, amount);
 
         Transfer completed = transactions.inTransaction(() -> {
-            Account fromAccount = findAccount(fromAccountId);
-            Account toAccount = findAccount(toAccountId);
+            boolean fromFirst = fromAccountId.compareTo(toAccountId) < 0;
+
+            Account first = findAccount(fromFirst ? fromAccountId : toAccountId);
+            Account second = findAccount(fromFirst ? toAccountId : fromAccountId);
+
+            Account fromAccount = fromFirst ? first : second;
+            Account toAccount = fromFirst ? second : first;
 
             Account updatedFromAccount = fromAccount.debit(amount);
             Account updatedToAccount = toAccount.credit(amount);

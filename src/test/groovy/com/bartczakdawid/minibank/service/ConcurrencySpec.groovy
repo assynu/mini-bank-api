@@ -83,4 +83,67 @@ class ConcurrencySpec extends IntegrationSpec {
         cleanup:
         executor.shutdown()
     }
+
+    @Timeout(30)
+    def "transfer both ways without deadlock"() {
+        given:
+        def anna = accountService.open("Anna", "PLN")
+        def jan = accountService.open("Jan", "PLN")
+        accountService.deposit(anna.id(), Money.of("1000.00", "PLN"))
+        accountService.deposit(jan.id(), Money.of("1000.00", "PLN"))
+        def threads = 50
+        def executor = Executors.newFixedThreadPool(threads)
+        def start = new CountDownLatch(1)
+
+        when:
+        def futures = (1..threads).collect { i ->
+            def from = i % 2 == 0 ? anna : jan
+            def to = i % 2 == 0 ? jan : anna
+            executor.submit({
+                start.await()
+                transferService.transfer(from.id(), to.id(), Money.of("1.00", "PLN"))
+            } as Callable)
+        }
+        start.countDown()
+        futures*.get()
+
+        then:
+        accountService.get(anna.id()).balance() == Money.of("1000.00", "PLN")
+        accountService.get(jan.id()).balance() == Money.of("1000.00", "PLN")
+        dsl.fetchCount(TRANSFERS) == threads
+
+        cleanup:
+        executor.shutdown()
+    }
+
+    @Timeout(30)
+    def "transfer in a cycle without deadlock"() {
+        given:
+        def anna = accountService.open("Anna", "PLN")
+        def jan = accountService.open("Jan", "PLN")
+        def ola = accountService.open("Ola", "PLN")
+        [anna, jan, ola].each { accountService.deposit(it.id(), Money.of("1000.00", "PLN")) }
+        def routes = [[anna, jan], [jan, ola], [ola, anna]]
+        def threads = 60
+        def executor = Executors.newFixedThreadPool(threads)
+        def start = new CountDownLatch(1)
+
+        when:
+        def futures = (1..threads).collect { i ->
+            def (from, to) = routes[i % 3]
+            executor.submit({
+                start.await()
+                transferService.transfer(from.id(), to.id(), Money.of("1.00", "PLN"))
+            } as Callable)
+        }
+        start.countDown()
+        futures*.get()
+
+        then:
+        [anna, jan, ola].every { accountService.get(it.id()).balance() == Money.of("1000.00", "PLN") }
+        dsl.fetchCount(TRANSFERS) == threads
+
+        cleanup:
+        executor.shutdown()
+    }
 }
