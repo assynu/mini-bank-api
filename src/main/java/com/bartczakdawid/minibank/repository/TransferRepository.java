@@ -4,6 +4,7 @@ import com.bartczakdawid.minibank.domain.Money;
 import com.bartczakdawid.minibank.domain.Transfer;
 import com.bartczakdawid.minibank.jooq.tables.records.TransfersRecord;
 import org.jooq.DSLContext;
+import org.jooq.exception.IntegrityConstraintViolationException;
 
 import java.util.Currency;
 import java.util.Optional;
@@ -12,7 +13,8 @@ import java.util.UUID;
 import static com.bartczakdawid.minibank.jooq.Tables.TRANSFERS;
 
 public class TransferRepository {
-
+    /* 23505 is the error code for duplicate */
+    private static final String UNIQUE_VIOLATION = "23505";
     private final DSLContext dsl;
 
     public TransferRepository(DSLContext dsl) {
@@ -20,13 +22,21 @@ public class TransferRepository {
     }
 
     public void insert(Transfer transfer) {
-        dsl.insertInto(TRANSFERS)
-                .set(TRANSFERS.ID, transfer.id())
-                .set(TRANSFERS.REQUEST_ID, transfer.requestId())
-                .set(TRANSFERS.FROM_ACCOUNT_ID, transfer.fromAccountId())
-                .set(TRANSFERS.TO_ACCOUNT_ID, transfer.toAccountId())
-                .set(TRANSFERS.AMOUNT, transfer.amount().amount())
-                .set(TRANSFERS.CURRENCY, transfer.amount().currency().getCurrencyCode()).execute();
+        try {
+            dsl.insertInto(TRANSFERS)
+                    .set(TRANSFERS.ID, transfer.id())
+                    .set(TRANSFERS.REQUEST_ID, transfer.requestId())
+                    .set(TRANSFERS.FROM_ACCOUNT_ID, transfer.fromAccountId())
+                    .set(TRANSFERS.TO_ACCOUNT_ID, transfer.toAccountId())
+                    .set(TRANSFERS.AMOUNT, transfer.amount().amount())
+                    .set(TRANSFERS.CURRENCY, transfer.amount().currency().getCurrencyCode())
+                    .execute();
+        } catch (IntegrityConstraintViolationException exception) {
+            if (UNIQUE_VIOLATION.equals(exception.sqlState())) {
+                throw new DuplicateRequestIdException(transfer.requestId(), exception);
+            }
+            throw exception;
+        }
     }
 
     public Optional<Transfer> findById(UUID id) {

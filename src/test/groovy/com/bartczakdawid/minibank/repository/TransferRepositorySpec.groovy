@@ -5,7 +5,6 @@ import com.bartczakdawid.minibank.domain.Account
 import com.bartczakdawid.minibank.domain.Money
 import com.bartczakdawid.minibank.domain.Transfer
 import org.jooq.exception.DataAccessException
-import org.jooq.exception.IntegrityConstraintViolationException
 
 class TransferRepositorySpec extends IntegrationSpec {
 
@@ -70,6 +69,6 @@ class TransferRepositorySpec extends IntegrationSpec {
         transfers.insert(Transfer.create("r-1", anna.id(), jan.id(), Money.of("50.00", "PLN")))
 
         then:
-        thrown(IntegrityConstraintViolationException)
+        thrown(DuplicateRequestIdException)
     }
 }

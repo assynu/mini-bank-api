@@ -146,4 +146,34 @@ class ConcurrencySpec extends IntegrationSpec {
         cleanup:
         executor.shutdown()
     }
+
+    @Timeout(30)
+    def "replay concurrent transfers with same request id"() {
+        given:
+        def anna = accountService.open("Anna", "PLN")
+        def jan = accountService.open("Jan", "PLN")
+        accountService.deposit(anna.id(), Money.of("100.00", "PLN"))
+        def threads = 20
+        def executor = Executors.newFixedThreadPool(threads)
+        def start = new CountDownLatch(1)
+
+        when:
+        def futures = (1..threads).collect {
+            executor.submit({
+                start.await()
+                transferService.transfer("r-1", anna.id(), jan.id(), Money.of("30.00", "PLN"))
+            } as Callable)
+        }
+        start.countDown()
+        def results = futures*.get()
+
+        then:
+        results*.id().unique().size() == 1
+        accountService.get(anna.id()).balance() == Money.of("70.00", "PLN")
+        accountService.get(jan.id()).balance() == Money.of("30.00", "PLN")
+        dsl.fetchCount(TRANSFERS) == 1
+
+        cleanup:
+        executor.shutdown()
+    }
 }

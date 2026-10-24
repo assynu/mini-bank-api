@@ -6,6 +6,7 @@ import com.bartczakdawid.minibank.domain.Money;
 import com.bartczakdawid.minibank.domain.Transfer;
 import com.bartczakdawid.minibank.repository.AccountHistoryRepository;
 import com.bartczakdawid.minibank.repository.AccountRepository;
+import com.bartczakdawid.minibank.repository.DuplicateRequestIdException;
 import com.bartczakdawid.minibank.repository.TransferRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,28 +37,34 @@ public class TransferService {
             return replay(existing.get(), fromAccountId, toAccountId, amount);
         }
 
-        Transfer completed = transactions.inTransaction(() -> {
-            boolean fromFirst = fromAccountId.compareTo(toAccountId) < 0;
+        Transfer completed;
+        try {
+            completed = transactions.inTransaction(() -> {
+                boolean fromFirst = fromAccountId.compareTo(toAccountId) < 0;
 
-            Account first = findAccount(fromFirst ? fromAccountId : toAccountId);
-            Account second = findAccount(fromFirst ? toAccountId : fromAccountId);
+                Account first = findAccount(fromFirst ? fromAccountId : toAccountId);
+                Account second = findAccount(fromFirst ? toAccountId : fromAccountId);
 
-            Account fromAccount = fromFirst ? first : second;
-            Account toAccount = fromFirst ? second : first;
+                Account fromAccount = fromFirst ? first : second;
+                Account toAccount = fromFirst ? second : first;
 
-            Account updatedFromAccount = fromAccount.debit(amount);
-            Account updatedToAccount = toAccount.credit(amount);
+                Account updatedFromAccount = fromAccount.debit(amount);
+                Account updatedToAccount = toAccount.credit(amount);
 
-            accountRepository.update(updatedFromAccount);
-            accountRepository.update(updatedToAccount);
+                accountRepository.update(updatedFromAccount);
+                accountRepository.update(updatedToAccount);
 
-            transferRepository.insert(transfer);
+                transferRepository.insert(transfer);
 
-            accountHistoryRepository.insert(AccountHistoryEntry.transferDebit(transfer));
-            accountHistoryRepository.insert(AccountHistoryEntry.transferCredit(transfer));
+                accountHistoryRepository.insert(AccountHistoryEntry.transferDebit(transfer));
+                accountHistoryRepository.insert(AccountHistoryEntry.transferCredit(transfer));
 
-            return transfer;
-        });
+                return transfer;
+            });
+        } catch (DuplicateRequestIdException e) {
+            Transfer winner = transferRepository.findByRequestId(requestId).orElseThrow(() -> e);
+            return replay(winner, fromAccountId, toAccountId, amount);
+        }
 
         log.atInfo()
                 .addKeyValue("transferId", completed.id())
