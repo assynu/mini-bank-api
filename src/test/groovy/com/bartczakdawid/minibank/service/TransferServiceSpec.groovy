@@ -141,6 +141,41 @@ class TransferServiceSpec extends IntegrationSpec {
         thrown(TransferNotFoundException)
     }
 
+    def "replay transfer with same request id"() {
+        given:
+        def anna = accountService.open("Anna", "PLN")
+        def jan = accountService.open("Jan", "PLN")
+        accountService.deposit(anna.id(), Money.of("100.00", "PLN"))
+        def first = transferService.transfer("r-1", anna.id(), jan.id(), Money.of("30.00", "PLN"))
+
+        when:
+        def second = transferService.transfer("r-1", anna.id(), jan.id(), Money.of("30.00", "PLN"))
+
+        then:
+        second == first
+        accountService.get(anna.id()).balance() == Money.of("70.00", "PLN")
+        accountService.get(jan.id()).balance() == Money.of("30.00", "PLN")
+        dsl.fetchCount(TRANSFERS) == 1
+        transferEntries(anna.id()).size() == 1
+        transferEntries(jan.id()).size() == 1
+    }
+
+    def "reject request id reused for different transfer"() {
+        given:
+        def anna = accountService.open("Anna", "PLN")
+        def jan = accountService.open("Jan", "PLN")
+        accountService.deposit(anna.id(), Money.of("100.00", "PLN"))
+        transferService.transfer("r-1", anna.id(), jan.id(), Money.of("30.00", "PLN"))
+
+        when:
+        transferService.transfer("r-1", anna.id(), jan.id(), Money.of("40.00", "PLN"))
+
+        then:
+        thrown(IdempotencyConflictException)
+        accountService.get(anna.id()).balance() == Money.of("70.00", "PLN")
+        dsl.fetchCount(TRANSFERS) == 1
+    }
+
     private List<AccountHistoryEntry> transferEntries(UUID accountId) {
         historyRepository.findByAccountId(accountId).findAll { it.type() == AccountHistoryEntry.Type.TRANSFER }
     }

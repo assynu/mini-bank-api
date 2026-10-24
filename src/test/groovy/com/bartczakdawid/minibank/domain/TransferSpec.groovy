@@ -78,4 +78,30 @@ class TransferSpec extends Specification {
         then:
         thrown(SameAccountTransferException)
     }
+
+    def "same request"() {
+        given:
+        def from = UUID.randomUUID()
+        def to = UUID.randomUUID()
+        def transfer = Transfer.create("r-1", from, to, Money.of("30.00", "PLN"))
+
+        expect:
+        transfer.sameRequestAs(from, to, Money.of("30", "PLN"))
+    }
+
+    def "different request when #field differs"() {
+        given:
+        def from = UUID.randomUUID()
+        def to = UUID.randomUUID()
+        def transfer = Transfer.create("r-1", from, to, Money.of("30.00", "PLN"))
+
+        expect:
+        !transfer.sameRequestAs(
+                field == "from" ? UUID.randomUUID() : from,
+                field == "to" ? UUID.randomUUID() : to,
+                field == "amount" ? Money.of("31.00", "PLN") : field == "currency" ? Money.of("30.00", "EUR") : Money.of("30.00", "PLN"))
+
+        where:
+        field << ["from", "to", "amount", "currency"]
+    }
 }

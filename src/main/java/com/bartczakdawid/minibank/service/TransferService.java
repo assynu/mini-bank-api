@@ -10,6 +10,7 @@ import com.bartczakdawid.minibank.repository.TransferRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Optional;
 import java.util.UUID;
 
 public class TransferService {
@@ -29,6 +30,11 @@ public class TransferService {
 
     public Transfer transfer(String requestId, UUID fromAccountId, UUID toAccountId, Money amount) {
         Transfer transfer = Transfer.create(requestId, fromAccountId, toAccountId, amount);
+
+        Optional<Transfer> existing = transferRepository.findByRequestId(requestId);
+        if (existing.isPresent()) {
+            return replay(existing.get(), fromAccountId, toAccountId, amount);
+        }
 
         Transfer completed = transactions.inTransaction(() -> {
             boolean fromFirst = fromAccountId.compareTo(toAccountId) < 0;
@@ -55,7 +61,7 @@ public class TransferService {
 
         log.atInfo()
                 .addKeyValue("transferId", completed.id())
-                .addKeyValue("requestId", completed.requestId())
+                .addKeyValue("clientRequestId", completed.requestId())
                 .addKeyValue("fromAccountId", completed.fromAccountId())
                 .addKeyValue("toAccountId", completed.toAccountId())
                 .addKeyValue("amount", completed.amount().amount().toPlainString())
@@ -67,6 +73,19 @@ public class TransferService {
 
     public Transfer get(UUID transferId) {
         return transferRepository.findById(transferId).orElseThrow(() -> new TransferNotFoundException(transferId));
+    }
+
+    private Transfer replay(Transfer existing, UUID fromAccountId, UUID toAccountId, Money amount) {
+        if (!existing.sameRequestAs(fromAccountId, toAccountId, amount)) {
+            throw new IdempotencyConflictException(existing.requestId());
+        }
+
+        log.atInfo()
+                .addKeyValue("transferId", existing.id())
+                .addKeyValue("clientRequestId", existing.requestId())
+                .log("Transfer replayed");
+
+        return existing;
     }
 
     private Account findAccount(UUID accountId) {

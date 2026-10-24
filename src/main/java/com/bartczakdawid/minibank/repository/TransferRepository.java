@@ -39,4 +39,11 @@ public class TransferRepository {
 
         return new Transfer(record.getId(), record.getRequestId(), record.getFromAccountId(), record.getToAccountId(), amount);
     }
+
+    public Optional<Transfer> findByRequestId(String requestId) {
+        return dsl.selectFrom(TRANSFERS)
+                .where(TRANSFERS.REQUEST_ID.eq(requestId))
+                .fetchOptional()
+                .map(this::toTransfer);
+    }
 }

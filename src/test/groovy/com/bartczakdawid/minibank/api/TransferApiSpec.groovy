@@ -121,12 +121,12 @@ class TransferApiSpec extends ApiSpec {
         jsonMapper.readValue(get("/accounts/${b.id()}").body(), AccountResponse).balance() == "0.00"
 
         where:
-        description              | target    | amount    | currency || status | error
-        "with insufficient funds"| "B"       | "1000.00" | "PLN"    || 422    | "INSUFFICIENT_FUNDS"
-        "to same account"        | "A"       | "10.00"   | "PLN"    || 422    | "SAME_ACCOUNT_TRANSFER"
-        "in different currency"  | "B"       | "10.00"   | "EUR"    || 422    | "CURRENCY_MISMATCH"
-        "of zero"                | "B"       | "0.00"    | "PLN"    || 422    | "INVALID_AMOUNT"
-        "to unknown account"     | "unknown" | "10.00"   | "PLN"    || 404    | "ACCOUNT_NOT_FOUND"
+        description               | target    | amount    | currency || status | error
+        "with insufficient funds" | "B"       | "1000.00" | "PLN"    || 422    | "INSUFFICIENT_FUNDS"
+        "to same account"         | "A"       | "10.00"   | "PLN"    || 422    | "SAME_ACCOUNT_TRANSFER"
+        "in different currency"   | "B"       | "10.00"   | "EUR"    || 422    | "CURRENCY_MISMATCH"
+        "of zero"                 | "B"       | "0.00"    | "PLN"    || 422    | "INVALID_AMOUNT"
+        "to unknown account"      | "unknown" | "10.00"   | "PLN"    || 404    | "ACCOUNT_NOT_FOUND"
     }
 
     def "reject request id #description"() {
@@ -147,9 +147,49 @@ class TransferApiSpec extends ApiSpec {
         jsonMapper.readValue(get("/accounts/${a.id()}").body(), AccountResponse).balance() == "100.00"
 
         where:
-        description | requestIdField                       || error
-        "missing"   | ''                                   || "MALFORMED_REQUEST"
-        "blank"     | '"requestId":"   ",'                 || "INVALID_REQUEST"
-        "too long"  | "\"requestId\":\"${'x' * 256}\","    || "INVALID_REQUEST"
+        description | requestIdField                    || error
+        "missing"   | ''                                || "MALFORMED_REQUEST"
+        "blank"     | '"requestId":"   ",'              || "INVALID_REQUEST"
+        "too long"  | "\"requestId\":\"${'x' * 256}\"," || "INVALID_REQUEST"
+    }
+
+    def "replay transfer"() {
+        given:
+        def a = jsonMapper.readValue(post("/accounts", '{"owner":"Anna","currency":"PLN"}').body(), AccountResponse)
+        def b = jsonMapper.readValue(post("/accounts", '{"owner":"Bob","currency":"PLN"}').body(), AccountResponse)
+        post("/accounts/${a.id()}/deposits", '{"amount":"100.00","currency":"PLN"}')
+        def body = """{"requestId":"r-1","fromAccountId":"${a.id()}","toAccountId":"${b.id()}","amount":"30.00","currency":"PLN"}"""
+        def first = post("/transfers", body)
+
+        when:
+        def second = post("/transfers", body)
+
+        then:
+        second.statusCode() == 201
+        jsonMapper.readValue(second.body(), TransferResponse) == jsonMapper.readValue(first.body(), TransferResponse)
+        second.headers().firstValue("Location") == first.headers().firstValue("Location")
+
+        and:
+        jsonMapper.readValue(get("/accounts/${a.id()}").body(), AccountResponse).balance() == "70.00"
+        jsonMapper.readValue(get("/accounts/${b.id()}").body(), AccountResponse).balance() == "30.00"
+    }
+
+    def "reject reused request id"() {
+        given:
+        def a = jsonMapper.readValue(post("/accounts", '{"owner":"Anna","currency":"PLN"}').body(), AccountResponse)
+        def b = jsonMapper.readValue(post("/accounts", '{"owner":"Bob","currency":"PLN"}').body(), AccountResponse)
+        post("/accounts/${a.id()}/deposits", '{"amount":"100.00","currency":"PLN"}')
+        post("/transfers", """{"requestId":"r-1","fromAccountId":"${a.id()}","toAccountId":"${b.id()}","amount":"30.00","currency":"PLN"}""")
+
+        when:
+        def response = post("/transfers",
+                """{"requestId":"r-1","fromAccountId":"${a.id()}","toAccountId":"${b.id()}","amount":"40.00","currency":"PLN"}""")
+
+        then:
+        response.statusCode() == 409
+        jsonMapper.readValue(response.body(), ErrorResponse).error() == "IDEMPOTENCY_CONFLICT"
+
+        and:
+        jsonMapper.readValue(get("/accounts/${a.id()}").body(), AccountResponse).balance() == "70.00"
     }
 }

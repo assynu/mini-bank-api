@@ -2,6 +2,7 @@ package com.bartczakdawid.minibank.api;
 
 import com.bartczakdawid.minibank.domain.*;
 import com.bartczakdawid.minibank.service.AccountNotFoundException;
+import com.bartczakdawid.minibank.service.IdempotencyConflictException;
 import com.bartczakdawid.minibank.service.TransferNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -75,6 +76,10 @@ public class ApiServer {
 
         http.exception(IllegalArgumentException.class, (exception, request, response) -> {
             error(response, 400, "INVALID_REQUEST", exception.getMessage());
+        });
+
+        http.exception(IdempotencyConflictException.class, (exception, request, response) -> {
+            error(response, 409, "IDEMPOTENCY_CONFLICT", exception.getMessage());
         });
 
         http.exception(TransferNotFoundException.class, (exception, request, response) -> {

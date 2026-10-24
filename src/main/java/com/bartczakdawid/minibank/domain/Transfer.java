@@ -42,4 +42,10 @@ public record Transfer(UUID id, String requestId, UUID fromAccountId, UUID toAcc
     public static Transfer create(String requestId, UUID fromAccount, UUID toAccount, Money amount) {
         return new Transfer(UUID.randomUUID(), requestId, fromAccount, toAccount, amount);
     }
+
+    public boolean sameRequestAs(UUID fromAccountId, UUID toAccountId, Money amount) {
+        return this.fromAccountId.equals(fromAccountId)
+                && this.toAccountId.equals(toAccountId)
+                && this.amount.equals(amount);
+    }
 }
