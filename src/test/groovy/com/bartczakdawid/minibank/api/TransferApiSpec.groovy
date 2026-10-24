@@ -9,16 +9,18 @@ class TransferApiSpec extends ApiSpec {
         def a = jsonMapper.readValue(post("/accounts", '{"owner":"Anna","currency":"PLN"}').body(), AccountResponse)
         def b = jsonMapper.readValue(post("/accounts", '{"owner":"Bob","currency":"PLN"}').body(), AccountResponse)
         post("/accounts/${a.id()}/deposits", '{"amount":"100.00","currency":"PLN"}')
+        def requestId = UUID.randomUUID().toString()
 
         when:
         def response = post("/transfers",
-                """{"fromAccountId":"${a.id()}","toAccountId":"${b.id()}","amount":"30.00","currency":"PLN"}""")
+                """{"requestId":"${requestId}","fromAccountId":"${a.id()}","toAccountId":"${b.id()}","amount":"30.00","currency":"PLN"}""")
 
         then:
         response.statusCode() == 201
 
         and:
         def transfer = jsonMapper.readValue(response.body(), TransferResponse)
+        transfer.requestId() == requestId
         transfer.fromAccountId() == a.id()
         transfer.toAccountId() == b.id()
         transfer.amount() == "30.00"
@@ -32,7 +34,7 @@ class TransferApiSpec extends ApiSpec {
         def b = jsonMapper.readValue(post("/accounts", '{"owner":"Bob","currency":"PLN"}').body(), AccountResponse)
         post("/accounts/${a.id()}/deposits", '{"amount":"100.00","currency":"PLN"}')
         def created = jsonMapper.readValue(post("/transfers",
-                """{"fromAccountId":"${a.id()}","toAccountId":"${b.id()}","amount":"30.00","currency":"PLN"}""").body(),
+                """{"requestId":"${UUID.randomUUID()}","fromAccountId":"${a.id()}","toAccountId":"${b.id()}","amount":"30.00","currency":"PLN"}""").body(),
                 TransferResponse)
 
         when:
@@ -50,7 +52,8 @@ class TransferApiSpec extends ApiSpec {
         post("/accounts/${a.id()}/deposits", '{"amount":"100.00","currency":"PLN"}')
 
         when:
-        post("/transfers", """{"fromAccountId":"${a.id()}","toAccountId":"${b.id()}","amount":"30.00","currency":"PLN"}""")
+        post("/transfers",
+                """{"requestId":"${UUID.randomUUID()}","fromAccountId":"${a.id()}","toAccountId":"${b.id()}","amount":"30.00","currency":"PLN"}""")
 
         then:
         jsonMapper.readValue(get("/accounts/${a.id()}").body(), AccountResponse).balance() == "70.00"
@@ -65,7 +68,7 @@ class TransferApiSpec extends ApiSpec {
 
         when:
         def transfer = jsonMapper.readValue(post("/transfers",
-                """{"fromAccountId":"${a.id()}","toAccountId":"${b.id()}","amount":"30.00","currency":"PLN"}""").body(),
+                """{"requestId":"${UUID.randomUUID()}","fromAccountId":"${a.id()}","toAccountId":"${b.id()}","amount":"30.00","currency":"PLN"}""").body(),
                 TransferResponse)
 
         then:
@@ -107,7 +110,7 @@ class TransferApiSpec extends ApiSpec {
 
         when:
         def response = post("/transfers",
-                """{"fromAccountId":"${a.id()}","toAccountId":"${to}","amount":"${amount}","currency":"${currency}"}""")
+                """{"requestId":"${UUID.randomUUID()}","fromAccountId":"${a.id()}","toAccountId":"${to}","amount":"${amount}","currency":"${currency}"}""")
 
         then:
         response.statusCode() == status
@@ -124,5 +127,29 @@ class TransferApiSpec extends ApiSpec {
         "in different currency"  | "B"       | "10.00"   | "EUR"    || 422    | "CURRENCY_MISMATCH"
         "of zero"                | "B"       | "0.00"    | "PLN"    || 422    | "INVALID_AMOUNT"
         "to unknown account"     | "unknown" | "10.00"   | "PLN"    || 404    | "ACCOUNT_NOT_FOUND"
+    }
+
+    def "reject request id #description"() {
+        given:
+        def a = jsonMapper.readValue(post("/accounts", '{"owner":"Anna","currency":"PLN"}').body(), AccountResponse)
+        def b = jsonMapper.readValue(post("/accounts", '{"owner":"Bob","currency":"PLN"}').body(), AccountResponse)
+        post("/accounts/${a.id()}/deposits", '{"amount":"100.00","currency":"PLN"}')
+        def accounts = """"fromAccountId":"${a.id()}","toAccountId":"${b.id()}","amount":"10.00","currency":"PLN\""""
+
+        when:
+        def response = post("/transfers", "{${requestIdField}${accounts}}")
+
+        then:
+        response.statusCode() == 400
+        jsonMapper.readValue(response.body(), ErrorResponse).error() == error
+
+        and:
+        jsonMapper.readValue(get("/accounts/${a.id()}").body(), AccountResponse).balance() == "100.00"
+
+        where:
+        description | requestIdField                       || error
+        "missing"   | ''                                   || "MALFORMED_REQUEST"
+        "blank"     | '"requestId":"   ",'                 || "INVALID_REQUEST"
+        "too long"  | "\"requestId\":\"${'x' * 256}\","    || "INVALID_REQUEST"
     }
 }

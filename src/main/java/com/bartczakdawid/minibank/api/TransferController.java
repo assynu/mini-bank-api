@@ -21,11 +21,12 @@ public class TransferController {
     public String create(Request request, Response response) {
         var body = jsonMapper.readValue(request.body(), TransferRequest.class);
 
+        String requestId = body.requestId();
         UUID fromAccountId = UUID.fromString(body.fromAccountId());
         UUID toAccountId = UUID.fromString(body.toAccountId());
         Money amount = Money.of(body.amount(), body.currency());
 
-        Transfer transfer = transferService.transfer(fromAccountId, toAccountId, amount);
+        Transfer transfer = transferService.transfer(requestId, fromAccountId, toAccountId, amount);
 
         response.status(201);
         response.header("Location", "/transfers/" + transfer.id());

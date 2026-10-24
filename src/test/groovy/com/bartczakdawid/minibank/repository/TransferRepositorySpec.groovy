@@ -17,7 +17,7 @@ class TransferRepositorySpec extends IntegrationSpec {
         def jan = Account.open("Jan", "PLN")
         accounts.insert(anna)
         accounts.insert(jan)
-        def transfer = Transfer.create(anna.id(), jan.id(), Money.of("50.00", "PLN"))
+        def transfer = Transfer.create(UUID.randomUUID().toString(), anna.id(), jan.id(), Money.of("50.00", "PLN"))
 
         when:
         transfers.insert(transfer)
@@ -33,7 +33,7 @@ class TransferRepositorySpec extends IntegrationSpec {
 
     def "reject transfer between unknown accounts"() {
         when:
-        transfers.insert(Transfer.create(UUID.randomUUID(), UUID.randomUUID(), Money.of("50.00", "PLN")))
+        transfers.insert(Transfer.create(UUID.randomUUID().toString(), UUID.randomUUID(), UUID.randomUUID(), Money.of("50.00", "PLN")))
 
         then:
         thrown(DataAccessException)

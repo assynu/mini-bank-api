@@ -63,7 +63,7 @@ class ConcurrencySpec extends IntegrationSpec {
             executor.submit({
                 start.await()
                 try {
-                    transferService.transfer(anna.id(), jan.id(), Money.of("10.00", "PLN"))
+                    transferService.transfer(UUID.randomUUID().toString(), anna.id(), jan.id(), Money.of("10.00", "PLN"))
                     true
                 } catch (InsufficientFundsException ignored) {
                     false
@@ -101,7 +101,7 @@ class ConcurrencySpec extends IntegrationSpec {
             def to = i % 2 == 0 ? jan : anna
             executor.submit({
                 start.await()
-                transferService.transfer(from.id(), to.id(), Money.of("1.00", "PLN"))
+                transferService.transfer(UUID.randomUUID().toString(), from.id(), to.id(), Money.of("1.00", "PLN"))
             } as Callable)
         }
         start.countDown()
@@ -133,7 +133,7 @@ class ConcurrencySpec extends IntegrationSpec {
             def (from, to) = routes[i % 3]
             executor.submit({
                 start.await()
-                transferService.transfer(from.id(), to.id(), Money.of("1.00", "PLN"))
+                transferService.transfer(UUID.randomUUID().toString(), from.id(), to.id(), Money.of("1.00", "PLN"))
             } as Callable)
         }
         start.countDown()

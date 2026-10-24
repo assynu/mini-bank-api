@@ -24,7 +24,7 @@ class AccountHistoryEntrySpec extends Specification {
 
     def "transfer entries"() {
         given:
-        def transfer = Transfer.create(UUID.randomUUID(), UUID.randomUUID(), Money.of("200.00", "PLN"))
+        def transfer = Transfer.create(UUID.randomUUID().toString(), UUID.randomUUID(), UUID.randomUUID(), Money.of("200.00", "PLN"))
 
         when:
         def debit = AccountHistoryEntry.transferDebit(transfer)

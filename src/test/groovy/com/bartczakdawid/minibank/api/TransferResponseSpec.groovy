@@ -11,13 +11,14 @@ class TransferResponseSpec extends Specification {
 
     def "map transfer to response"() {
         given:
-        def transfer = Transfer.create(UUID.randomUUID(), UUID.randomUUID(), Money.of("30", "PLN"))
+        def transfer = Transfer.create(UUID.randomUUID().toString(), UUID.randomUUID(), UUID.randomUUID(), Money.of("30", "PLN"))
 
         when:
         def response = TransferResponse.from(transfer)
 
         then:
         response.id() == transfer.id().toString()
+        response.requestId() == transfer.requestId()
         response.fromAccountId() == transfer.fromAccountId().toString()
         response.toAccountId() == transfer.toAccountId().toString()
         response.amount() == "30.00"
@@ -28,12 +29,13 @@ class TransferResponseSpec extends Specification {
         given:
         def from = UUID.randomUUID().toString()
         def to = UUID.randomUUID().toString()
-        def body = """{"fromAccountId":"$from","toAccountId":"$to","amount":"30.00","currency":"PLN"}"""
+        def body = """{"requestId":"r-1","fromAccountId":"$from","toAccountId":"$to","amount":"30.00","currency":"PLN"}"""
 
         when:
         def request = json.readValue(body, TransferRequest)
 
         then:
+        request.requestId() == "r-1"
         request.fromAccountId() == from
         request.toAccountId() == to
         request.amount() == "30.00"
@@ -49,15 +51,16 @@ class TransferResponseSpec extends Specification {
 
         where:
         field           | body
-        "fromAccountId" | '{"toAccountId":"b","amount":"30.00","currency":"PLN"}'
-        "toAccountId"   | '{"fromAccountId":"a","amount":"30.00","currency":"PLN"}'
-        "amount"        | '{"fromAccountId":"a","toAccountId":"b","currency":"PLN"}'
-        "currency"      | '{"fromAccountId":"a","toAccountId":"b","amount":"30.00"}'
+        "requestId"     | '{"fromAccountId":"a","toAccountId":"b","amount":"30.00","currency":"PLN"}'
+        "fromAccountId" | '{"requestId":"r-1","toAccountId":"b","amount":"30.00","currency":"PLN"}'
+        "toAccountId"   | '{"requestId":"r-1","fromAccountId":"a","amount":"30.00","currency":"PLN"}'
+        "amount"        | '{"requestId":"r-1","fromAccountId":"a","toAccountId":"b","currency":"PLN"}'
+        "currency"      | '{"requestId":"r-1","fromAccountId":"a","toAccountId":"b","amount":"30.00"}'
     }
 
     def "reject transfer request with unknown field"() {
         when:
-        json.readValue('{"fromAccountId":"a","toAccountId":"b","amount":"30.00","currency":"PLN","fee":"1.00"}', TransferRequest)
+        json.readValue('{"requestId":"r-1","fromAccountId":"a","toAccountId":"b","amount":"30.00","currency":"PLN","fee":"1.00"}', TransferRequest)
 
         then:
         thrown(JacksonException)

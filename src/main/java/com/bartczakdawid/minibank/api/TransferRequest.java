@@ -1,7 +1,10 @@
 package com.bartczakdawid.minibank.api;
 
-public record TransferRequest(String fromAccountId, String toAccountId, String amount, String currency) {
+public record TransferRequest(String requestId, String fromAccountId, String toAccountId, String amount, String currency) {
     public TransferRequest {
+        if (requestId == null) {
+            throw new IllegalArgumentException("requestId is required");
+        }
         if (fromAccountId == null) {
             throw new IllegalArgumentException("fromAccountId is required");
         }

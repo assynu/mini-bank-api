@@ -26,7 +26,7 @@ class TransferServiceSpec extends IntegrationSpec {
         accountService.deposit(anna.id(), Money.of("100.00", "PLN"))
 
         when:
-        transferService.transfer(anna.id(), jan.id(), Money.of("30.00", "PLN"))
+        transferService.transfer(UUID.randomUUID().toString(), anna.id(), jan.id(), Money.of("30.00", "PLN"))
 
         then:
         accountService.get(anna.id()).balance() == Money.of("70.00", "PLN")
@@ -40,7 +40,7 @@ class TransferServiceSpec extends IntegrationSpec {
         accountService.deposit(anna.id(), Money.of("100.00", "PLN"))
 
         when:
-        def transfer = transferService.transfer(anna.id(), jan.id(), Money.of("30.00", "PLN"))
+        def transfer = transferService.transfer(UUID.randomUUID().toString(), anna.id(), jan.id(), Money.of("30.00", "PLN"))
 
         then:
         def annaEntries = transferEntries(anna.id())
@@ -64,9 +64,9 @@ class TransferServiceSpec extends IntegrationSpec {
         when:
         accountService.deposit(anna.id(), Money.of("100.00", "PLN"))
         accountService.deposit(jan.id(), Money.of("50.00", "PLN"))
-        transferService.transfer(anna.id(), jan.id(), Money.of("30.00", "PLN"))
-        transferService.transfer(jan.id(), anna.id(), Money.of("10.50", "PLN"))
-        transferService.transfer(anna.id(), jan.id(), Money.of("0.01", "PLN"))
+        transferService.transfer(UUID.randomUUID().toString(), anna.id(), jan.id(), Money.of("30.00", "PLN"))
+        transferService.transfer(UUID.randomUUID().toString(), jan.id(), anna.id(), Money.of("10.50", "PLN"))
+        transferService.transfer(UUID.randomUUID().toString(), anna.id(), jan.id(), Money.of("0.01", "PLN"))
 
         then:
         accountService.get(anna.id()).balance() == historyTotal(anna.id())
@@ -80,7 +80,7 @@ class TransferServiceSpec extends IntegrationSpec {
         accountService.deposit(anna.id(), Money.of("10.00", "PLN"))
 
         when:
-        transferService.transfer(anna.id(), jan.id(), Money.of("30.00", "PLN"))
+        transferService.transfer(UUID.randomUUID().toString(), anna.id(), jan.id(), Money.of("30.00", "PLN"))
 
         then:
         thrown(InsufficientFundsException)
@@ -97,7 +97,7 @@ class TransferServiceSpec extends IntegrationSpec {
         accountService.deposit(anna.id(), Money.of("100.00", "PLN"))
 
         when:
-        transferService.transfer(anna.id(), UUID.randomUUID(), Money.of("30.00", "PLN"))
+        transferService.transfer(UUID.randomUUID().toString(), anna.id(), UUID.randomUUID(), Money.of("30.00", "PLN"))
 
         then:
         thrown(AccountNotFoundException)
@@ -112,7 +112,7 @@ class TransferServiceSpec extends IntegrationSpec {
         accountService.deposit(anna.id(), Money.of("100.00", "PLN"))
 
         when:
-        transferService.transfer(anna.id(), jan.id(), Money.of("30.00", "PLN"))
+        transferService.transfer(UUID.randomUUID().toString(), anna.id(), jan.id(), Money.of("30.00", "PLN"))
 
         then:
         thrown(CurrencyMismatchException)
@@ -127,7 +127,7 @@ class TransferServiceSpec extends IntegrationSpec {
         def anna = accountService.open("Anna", "PLN")
         def jan = accountService.open("Jan", "PLN")
         accountService.deposit(anna.id(), Money.of("100.00", "PLN"))
-        def transfer = transferService.transfer(anna.id(), jan.id(), Money.of("30.00", "PLN"))
+        def transfer = transferService.transfer(UUID.randomUUID().toString(), anna.id(), jan.id(), Money.of("30.00", "PLN"))
 
         expect:
         transferService.get(transfer.id()) == transfer

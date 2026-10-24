@@ -27,8 +27,8 @@ public class TransferService {
         this.transactions = transactions;
     }
 
-    public Transfer transfer(UUID fromAccountId, UUID toAccountId, Money amount) {
-        Transfer transfer = Transfer.create(fromAccountId, toAccountId, amount);
+    public Transfer transfer(String requestId, UUID fromAccountId, UUID toAccountId, Money amount) {
+        Transfer transfer = Transfer.create(requestId, fromAccountId, toAccountId, amount);
 
         Transfer completed = transactions.inTransaction(() -> {
             boolean fromFirst = fromAccountId.compareTo(toAccountId) < 0;
@@ -55,6 +55,7 @@ public class TransferService {
 
         log.atInfo()
                 .addKeyValue("transferId", completed.id())
+                .addKeyValue("requestId", completed.requestId())
                 .addKeyValue("fromAccountId", completed.fromAccountId())
                 .addKeyValue("toAccountId", completed.toAccountId())
                 .addKeyValue("amount", completed.amount().amount().toPlainString())

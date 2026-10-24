@@ -29,7 +29,7 @@ class AccountHistoryEntryResponseSpec extends Specification {
 
     def "map transfer debit"() {
         given:
-        def transfer = Transfer.create(UUID.randomUUID(), UUID.randomUUID(), Money.of("200.00", "PLN"))
+        def transfer = Transfer.create(UUID.randomUUID().toString(), UUID.randomUUID(), UUID.randomUUID(), Money.of("200.00", "PLN"))
         def entry = AccountHistoryEntry.transferDebit(transfer)
 
         when:

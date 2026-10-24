@@ -22,6 +22,7 @@ public class TransferRepository {
     public void insert(Transfer transfer) {
         dsl.insertInto(TRANSFERS)
                 .set(TRANSFERS.ID, transfer.id())
+                .set(TRANSFERS.REQUEST_ID, transfer.requestId())
                 .set(TRANSFERS.FROM_ACCOUNT_ID, transfer.fromAccountId())
                 .set(TRANSFERS.TO_ACCOUNT_ID, transfer.toAccountId())
                 .set(TRANSFERS.AMOUNT, transfer.amount().amount())
@@ -36,6 +37,6 @@ public class TransferRepository {
         var currency = Currency.getInstance(record.getCurrency());
         var amount = new Money(record.getAmount(), currency);
 
-        return new Transfer(record.getId(), record.getFromAccountId(), record.getToAccountId(), amount);
+        return new Transfer(record.getId(), record.getRequestId(), record.getFromAccountId(), record.getToAccountId(), amount);
     }
 }
