@@ -59,6 +59,7 @@ POST {{baseUrl}}/transfers
 Content-Type: application/json
 
 {
+  "requestId": "{{$random.uuid}}",
   "fromAccountId": "{{accountA}}",
   "toAccountId": "{{accountB}}",
   "amount": "30.00",
@@ -124,6 +125,7 @@ POST {{baseUrl}}/transfers
 Content-Type: application/json
 
 {
+  "requestId": "{{$random.uuid}}",
   "fromAccountId": "{{accountB}}",
   "toAccountId": "{{accountA}}",
   "amount": "1000.00",
@@ -139,6 +141,7 @@ POST {{baseUrl}}/transfers
 Content-Type: application/json
 
 {
+  "requestId": "{{$random.uuid}}",
   "fromAccountId": "{{accountA}}",
   "toAccountId": "{{accountA}}",
   "amount": "10.00",
