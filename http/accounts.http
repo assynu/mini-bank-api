@@ -152,7 +152,7 @@ Content-Type: application/json
     client.test("422", () => client.assert(response.body.error === "SAME_ACCOUNT_TRANSFER"));
 %}
 
-### Error: missing field -> 400 INVALID_REQUEST
+### Error: missing field -> 400 MALFORMED_REQUEST
 POST {{baseUrl}}/accounts
 Content-Type: application/json
 
@@ -160,9 +160,7 @@ Content-Type: application/json
   "owner": "Alice"
 }
 
-> {%
-    client.test("400", () => client.assert(response.body.error === "INVALID_REQUEST"));
-%}
+> {% client.test("400", () => client.assert(response.body.error === "MALFORMED_REQUEST")); %}
 
 ### Error: unknown field -> 400 MALFORMED_REQUEST
 POST {{baseUrl}}/accounts
